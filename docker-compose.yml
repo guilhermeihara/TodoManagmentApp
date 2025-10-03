@@ -1,0 +1,41 @@
+services:
+  todoapi:
+    build:
+      context: ./TodoApi/TodoApi
+      dockerfile: Dockerfile
+    container_name: todo-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Data Source=/app/data/todos.db
+    ports:
+      - "5001:8080"
+    volumes:
+      - todo-api:/app/data
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  todoapp:
+    build:
+      context: ./todoapp
+      dockerfile: Dockerfile
+    container_name: todo-app
+    ports:
+      - "3000:80"
+    depends_on:
+      todoapi:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  todo-api:
+    driver: local
+
+networks:
+  default:
+    name: todo-network
